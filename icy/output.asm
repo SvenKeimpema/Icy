@@ -34,23 +34,25 @@ dump:
     ret
 global _start
 _start:
-    push 1
+    push 7
+    push 7
+    pop rax
+    pop rbx
+    add rbx, rax
+    push rbx
     pop rax
     test rax, rax
-    je L4
-    jmp L0
-L0:
+    jz L2
     push 1
     pop rdi
     call dump
-    jmp L7
-L0:
-    push 0
+    jmp L4
+L2:
+    push 2
     pop rdi
     call dump
-    jmp L0
-L0:
+    jmp L4
+L4:
     mov       rax, 60
     xor       rdi, rdi
     syscall
-section .data
