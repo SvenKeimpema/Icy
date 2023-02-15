@@ -22,9 +22,17 @@ def compileProgram(program: astIce.Program):
 
 def writeProgram(out, op, nextOp):
     global INDEX
-    if type(op) == str:
-        out.write("    pop rax\n")
-        out.write("    pop rbx\n")
+    if op.kind == "BinaryExpr":
+        if op.left.kind == "NumericLiteral":
+            out.write(f"    mov rax, {op.left.value}\n")
+        else:
+            out.write(f"    mov rax, [{op.left.value}]\n")
+        if op.right.kind == "NumericLiteral":
+            out.write(f"    mov rbx, {op.right.value}\n")
+        else:
+            out.write(f"    mov rbx, [{op.right.value}]\n")
+
+        op = op.operator
         if op == '+':
             out.write("    add rbx, rax\n")
             out.write("    push rbx\n")
@@ -40,25 +48,25 @@ def writeProgram(out, op, nextOp):
         elif op == '<':
             out.write("    mov rcx, 0\n")
             out.write("    mov rdx, 1\n")
-            out.write("    cmp rax, rbx\n")
+            out.write("    cmp rbx, rax\n")
             out.write("    cmovl rcx, rdx\n")
             out.write("    push rcx\n")
         elif op == '>':
             out.write("    mov rcx, 0\n")
             out.write("    mov rdx, 1\n")
-            out.write("    cmp rax, rbx\n")
+            out.write("    cmp rbx, rax\n")
             out.write("    cmovg rcx, rdx\n")
             out.write("    push rcx\n")
         elif op == '<=':
             out.write("    mov rcx, 0\n")
             out.write("    mov rdx, 1\n")
-            out.write("    cmp rax, rbx\n")
+            out.write("    cmp rbx, rax\n")
             out.write("    cmovle rcx, rdx\n")
             out.write("    push rcx\n")
         elif op == '>=':
             out.write("    mov rcx, 0\n")
             out.write("    mov rdx, 1\n")
-            out.write("    cmp rax, rbx\n")
+            out.write("    cmp rbx, rax\n")
             out.write("    cmovge rcx, rdx\n")
             out.write("    push rcx\n")
         return
@@ -73,9 +81,7 @@ def writeProgram(out, op, nextOp):
         out.write("    push %d\n" % op.value)
     elif op.kind == "Var" and (nextOp.kind != "BinaryExpr" if nextOp != None else True):
         out.write(f"    mov rax, [{op.value}]\n")
-        out.write("    push rax\n")
-    elif op.kind == "BinaryExpr":
-        evalBinExpr(out, op)
+        out.write(f"    push rax\n")
     elif op.kind == "Let":
         VARIABLES[op.name] = op.value
     elif op.kind == "Function":
@@ -106,9 +112,8 @@ def writeProgram(out, op, nextOp):
             evalPrintExpr(out, op)
             out.write("    pop rax\n")
             out.write("    test rax, rax\n")
-            out.write("    push rax\n")
-            out.write("    jz L%d\n" % (INDEX+1))
-            out.write("    jmp L%d\n" % op.end)
+            out.write("    jz L%d\n" % op.end)
+            out.write("    jmp L%d\n" % (INDEX+1))
             out.write("L%d:\n" % (INDEX+1))
 
 def evalPrintExpr(out, func):
