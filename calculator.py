@@ -21,5 +21,7 @@ def calculate(op: astIce.Expr):
 
     elif op.kind == "NumericLiteral":
         stack.append(op.value)
+    else:
+        stack.append(op.value)
     
     return stack[0]

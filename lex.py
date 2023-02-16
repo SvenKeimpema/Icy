@@ -40,8 +40,8 @@ def getAlpha(line: str, index: int):
         index += 1
     return alpha, index
     
-def lex_file():
-    with open("code.ice", 'r') as inputData:
+def lex_file(filePath):
+    with open(filePath, 'r') as inputData:
         assert operators.totalOps == 12, "need to add new ops for lex, totalOps = %d" % int(operators.totalOps)
         tokens = []
         index = 0
@@ -103,6 +103,8 @@ def lex_file():
                     tokens.append(Token(operators.CLOSEPAREN))
                 elif line[index] == '=':
                     tokens.append(Token(operators.IDENTIFIER))
+                elif line[index] == '#':
+                    break
                 index += 1
             index = 0
         

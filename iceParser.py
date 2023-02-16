@@ -13,8 +13,8 @@ class Parser:
     def eat(self) -> lex.Token:
         return self.tokens.pop(0) if len(self.tokens) > 0  else None
 
-    def produceAST(self) -> astIce.Program:
-        self.tokens = lex.lex_file()
+    def produceAST(self, filePath) -> astIce.Program:
+        self.tokens = lex.lex_file(filePath)
         self.program = astIce.Program()
 
         while self.notEOF():

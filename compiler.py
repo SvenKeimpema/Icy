@@ -3,6 +3,7 @@ import calculator
 
 INDEX = -1
 VARIABLES = {}
+STRINGVARS = 0
 
 def setVar(out, push: bool, reg: str):
     if push:
@@ -24,13 +25,11 @@ def compileProgram(program: astIce.Program):
         out.write("    xor       rdi, rdi\n")                
         out.write("    syscall\n\n")
         out.write("section .data\n")
-        out.write(f"    defaultStr: db \"HIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII\"\n")
-        out.write(f"    defaultStrLen: db 136")
-        for name, value in VARIABLES.items():
-            if str(value).isnumeric():
-                out.write(f"    {name}: dq {value}\n")
+        for var in VARIABLES.items():
+            if str(var[1]).isnumeric():
+                out.write(f"    {var[0]}: dq {var[1]}\n")
             else:
-                out.write(f"    {name}: db `{value}`\n")
+                out.write(f"    {var[0]}: db `{var[1]}`\n")
 
 def writeValue(out, side, opSide, nextOp):
     reg = "rax" if side == "left" else "rbx"
@@ -44,7 +43,7 @@ def writeValue(out, side, opSide, nextOp):
         out.write(f"    mov {reg}, [{opSide.value}]\n")
 
 def writeProgram(out, op, nextOp):
-    global INDEX
+    global INDEX, STRINGVARS
     if op.kind == "BinaryExpr":
         if op.left.kind == "BinaryExpr":
             writeValue(out, "left", op.left, nextOp)
@@ -129,25 +128,30 @@ def writeProgram(out, op, nextOp):
 
     elif op.kind == "Let":
         if op.value.kind != "string":
-            print(op.value.kind)
-            VARIABLES[op.name] = calculator.calculate(op.value)
+            if op.value.kind == "BinaryExpr":
+                VARIABLES[op.name] = calculator.calculate(op.value)
+            else:
+                VARIABLES[op.name] = op.value
         else:
             VARIABLES[op.name] = op.value.value
             VARIABLES[op.name+"len"] = len(op.value.value)
     elif op.kind == "Function":
         if op.funcType == "print":
             if op.right.kind == "string":
-                out.write(f"    mov rax, `{op.right.value}`\n")
-                out.write(f"    mov rbx, {len(op.right.value)}\n")
-                out.write(f"    mov [defaultStr], rax\n")
-                out.write(f"    mov [defaultStrLen], rbx\n")
-                out.write(f"    mov rsi, defaultStr\n")
-                out.write(f"    mov rdx, [defaultStrLen]\n")
+                VARIABLES["name"+str(STRINGVARS)] = op.right.value
+                VARIABLES["name"+str(STRINGVARS)+"len"] = len(op.right.value)
+                out.write(f"    mov rsi, name{str(STRINGVARS)}\n")
+                out.write(f"    mov rdx, [name{str(STRINGVARS)}len]\n")
+                STRINGVARS += 1
                 out.write("    call printStr\n")
             elif op.right.kind == "Var":
-                out.write(f"    mov rsi, {op.right.value}\n")
-                out.write(f"    mov rdx, [{op.right.value}len]\n")
-                out.write("    call printStr\n")
+                if type(VARIABLES[op.right.value]) == int:
+                    out.write(f"    mov rdi, [{op.right.value}]\n")
+                    out.write("    call dump\n")
+                else:
+                    out.write(f"    mov rsi, {op.right.value}\n")
+                    out.write(f"    mov rdx, [{op.right.value}len]\n")
+                    out.write("    call printStr\n")
             else:
                 value = calculator.calculate(op.right)
                 out.write(f"    mov rdi, {value}\n")

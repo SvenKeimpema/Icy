@@ -46,17 +46,47 @@ printStr:
 
 global _start
 _start:
-    mov rax, `test\n`
-    mov rbx, 6
-    mov [defaultStr], rax
-    mov [defaultStrLen], rbx
-    mov rsi, defaultStr
-    mov rdx, [defaultStrLen]
+    mov rax, [a]
+    mov rbx, [b]
+    mov rcx, 0
+    mov rdx, 1
+    cmp rax, rbx
+    cmovl rcx, rdx
+    push rcx
+    pop rax
+    test rax, rax
+    jz L4
+    mov rsi, name0
+    mov rdx, [name0len]
     call printStr
+    jmp L4
+L4:
+    mov rax, [a]
+    mov rbx, [b]
+    add rax, rbx
+    mov [b], rax
+    jmp L6
+L6:
+    mov rax, [b]
+    mov rbx, [a]
+    cmp rax, rbx
+    jg L7
+    jmp L9
+L7:
+    mov rdi, [b]
+    call dump
+    mov rax, [b]
+    mov rbx, 1
+    sub rax, rbx
+    mov [b], rax
+    jmp L6
+L9:
     mov       rax, 60
     xor       rdi, rdi
     syscall
 
 section .data
-    defaultStr: db "HIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
-    defaultStrLen: db 136
+    a: dq 5
+    b: dq 6
+    name0: db `a is less than b\n`
+    name0len: dq 18
