@@ -3,6 +3,10 @@ import astIce
 INDEX = -1
 VARIABLES = {}
 
+def setVar(out, push: bool, reg: str):
+    if push:
+        out.write(f"    push {reg}\n")
+
 def compileProgram(program: astIce.Program):
     global INDEX
     program.body = cross_refrence(program.body)
@@ -27,55 +31,70 @@ def writeProgram(out, op, nextOp):
             out.write(f"    mov rax, {op.left.value}\n")
         else:
             out.write(f"    mov rax, [{op.left.value}]\n")
-        if op.right.kind == "NumericLiteral":
-            out.write(f"    mov rbx, {op.right.value}\n")
-        else:
-            out.write(f"    mov rbx, [{op.right.value}]\n")
 
-        op = op.operator
-        if op == '+':
-            out.write("    add rbx, rax\n")
-            out.write("    push rbx\n")
-        elif op == '-':
-            out.write("    sub rbx, rax\n")
-            out.write("    push rbx\n")
-        elif op == '*':
-            out.write("    mul rbx\n")
-            out.write("    push rax\n")
-        elif op == '/':
-            out.write("    div rbx\n")
-            out.write("    push rax\n")
-        elif op == '<':
-            out.write("    mov rcx, 0\n")
-            out.write("    mov rdx, 1\n")
-            out.write("    cmp rbx, rax\n")
-            out.write("    cmovl rcx, rdx\n")
-            out.write("    push rcx\n")
-        elif op == '>':
-            out.write("    mov rcx, 0\n")
-            out.write("    mov rdx, 1\n")
-            out.write("    cmp rbx, rax\n")
-            out.write("    cmovg rcx, rdx\n")
-            out.write("    push rcx\n")
-        elif op == '<=':
-            out.write("    mov rcx, 0\n")
-            out.write("    mov rdx, 1\n")
-            out.write("    cmp rbx, rax\n")
-            out.write("    cmovle rcx, rdx\n")
-            out.write("    push rcx\n")
-        elif op == '>=':
-            out.write("    mov rcx, 0\n")
-            out.write("    mov rdx, 1\n")
-            out.write("    cmp rbx, rax\n")
-            out.write("    cmovge rcx, rdx\n")
-            out.write("    push rcx\n")
+        rbx = f"{op.right.value}" if op.right.kind == "NumericLiteral" else f"[{op.right.value}]"
+        end = op.end
+        oper = op.operator
+
+        if oper == '+':
+            out.write(f"    add rax, {rbx}\n")
+            setVar(out, op.push, "rax")
+        elif oper == '-':
+            out.write(f"    sub rax, {rbx}\n")
+            setVar(out, op.push, "rax")
+        elif oper == '*':
+            out.write(f"    mov rbx, {rbx}\n")
+            out.write(f"    mul rbx\n")
+            setVar(out, op.push, "rax")
+        elif oper == '/':
+            out.write(f"    mov rbx, {rbx}\n")
+            out.write(f"    div rbx\n")
+            setVar(out, op.push, "rax")
+        elif oper == '<':
+            if end == -1:
+                out.write("    mov rcx, 0\n")
+                out.write("    mov rdx, 1\n")
+                out.write(f"    cmp rax, {rbx}\n")
+                out.write("    cmovl rcx, rdx\n")
+                setVar(out, op.push, "rcx")
+            else:
+                out.write(f"    cmp rax, {rbx}\n")
+                out.write(f"    jl L{end}\n")
+        elif oper == '>':
+            if end == -1:
+                out.write("    mov rcx, 0\n")
+                out.write("    mov rdx, 1\n")
+                out.write(f"    cmp rax, {rbx}\n")
+                out.write("    cmovg rcx, rdx\n")
+                setVar(out, op.push, "rcx")
+            else:
+                out.write(f"    cmp rax, {rbx}\n")
+                out.write(f"    jg L{end}\n")
+        elif oper == '<=':
+            if end == -1:
+                out.write("    mov rcx, 0\n")
+                out.write("    mov rdx, 1\n")
+                out.write(f"    cmp rax, {rbx}\n")
+                out.write("    cmovle rcx, rdx\n")
+                setVar(out, op.push, "rcx")
+            else:
+                out.write(f"    cmp rax, {rbx}\n")
+                out.write(f"    jle L{end}\n")
+        elif oper == '>=':
+            if end == -1:
+                out.write("    mov rcx, 0\n")
+                out.write("    mov rdx, 1\n")
+                out.write(f"    cmp rax, {rbx}\n")
+                out.write("    cmovg rcx, rdx\n")
+                setVar(out, op.push, "rcx")
+            else:
+                out.write(f"    cmp rax, {rbx}\n")
+                out.write(f"    jge L{end}\n")
         return
     if op.kind == "Identifier":
-        out.write(f"    mov rax, [{op.name}]\n")
-        out.write("    push rax\n")
+        if op.value.kind == "BinaryExpr":
+            op.value.push = False
         writeProgram(out, op.value, nextOp)
-        out.write("    pop rax\n")
-        out.write("    pop rbx\n")
         out.write(f"    mov [{op.name}], rax\n")
     elif op.kind == "NumericLiteral" and (nextOp.kind != "BinaryExpr" if nextOp != None else True):
         out.write("    push %d\n" % op.value)
@@ -110,10 +129,7 @@ def writeProgram(out, op, nextOp):
             out.write("    jmp L%d\n" % INDEX)
             out.write("L%d:\n" % INDEX)
             evalPrintExpr(out, op)
-            out.write("    pop rax\n")
-            out.write("    test rax, rax\n")
-            out.write("    jz L%d\n" % op.end)
-            out.write("    jmp L%d\n" % (INDEX+1))
+            out.write("    jmp L%d\n" % op.end)
             out.write("L%d:\n" % (INDEX+1))
 
 def evalPrintExpr(out, func):
@@ -145,6 +161,7 @@ def cross_refrence(tokens):
         elif op.funcType == "end":
             block_ip = stack.pop()
             if tokens[block_ip].funcType == "while":
+                tokens[block_ip].right.end = block_ip+1
                 tokens[ip].end = block_ip
             else:
                 tokens[ip].end = ip

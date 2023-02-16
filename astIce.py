@@ -26,6 +26,8 @@ class BinaryExpr(Expr):
         self.left: Expr = None
         self.right: Expr = None
         self.operator: str = ""
+        self.end: int = -1
+        self.push: bool = True
     
     def setBinExpr(self, left, right, op):
         self.left = left
