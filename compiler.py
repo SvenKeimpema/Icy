@@ -1,4 +1,5 @@
 import astIce
+import calculator
 
 INDEX = -1
 VARIABLES = {}
@@ -6,6 +7,8 @@ VARIABLES = {}
 def setVar(out, push: bool, reg: str):
     if push:
         out.write(f"    push {reg}\n")
+    elif reg != "rax":
+        out.write(f"    mov rax, {reg}")
 
 def compileProgram(program: astIce.Program):
     global INDEX
@@ -24,71 +27,83 @@ def compileProgram(program: astIce.Program):
         for name, value in VARIABLES.items():
             out.write(f"    {name}: dq {value}\n")
 
+def writeValue(out, side, opSide, nextOp):
+    reg = "rax" if side == "left" else "rbx"
+
+    if opSide.kind == "BinaryExpr":
+        writeProgram(out, opSide, nextOp)
+        out.write(f"    pop {reg}\n")
+    elif opSide.kind == "NumericLiteral":
+        out.write(f"    mov {reg}, {opSide.value}\n")
+    else:
+        out.write(f"    mov {reg}, [{opSide.value}]\n")
+
 def writeProgram(out, op, nextOp):
     global INDEX
     if op.kind == "BinaryExpr":
-        if op.left.kind == "NumericLiteral":
-            out.write(f"    mov rax, {op.left.value}\n")
+        if op.left.kind == "BinaryExpr":
+            writeValue(out, "left", op.left, nextOp)
+            writeValue(out, "right", op.right, nextOp)
+        elif op.right.kind == "BinaryExpr":
+            writeValue(out, "right", op.right, nextOp)
+            writeValue(out, "left", op.left, nextOp)
         else:
-            out.write(f"    mov rax, [{op.left.value}]\n")
-
-        rbx = f"{op.right.value}" if op.right.kind == "NumericLiteral" else f"[{op.right.value}]"
+            writeValue(out, "left", op.left, nextOp)
+            writeValue(out, "right", op.right, nextOp)
         end = op.end
         oper = op.operator
 
         if oper == '+':
-            out.write(f"    add rax, {rbx}\n")
+            out.write(f"    add rax, rbx\n")
             setVar(out, op.push, "rax")
         elif oper == '-':
-            out.write(f"    sub rax, {rbx}\n")
+            out.write(f"    sub rax, rbx\n")
             setVar(out, op.push, "rax")
         elif oper == '*':
-            out.write(f"    mov rbx, {rbx}\n")
             out.write(f"    mul rbx\n")
             setVar(out, op.push, "rax")
         elif oper == '/':
-            out.write(f"    mov rbx, {rbx}\n")
             out.write(f"    div rbx\n")
             setVar(out, op.push, "rax")
         elif oper == '<':
             if end == -1:
                 out.write("    mov rcx, 0\n")
                 out.write("    mov rdx, 1\n")
-                out.write(f"    cmp rax, {rbx}\n")
+                out.write(f"    cmp rax, rbx\n")
                 out.write("    cmovl rcx, rdx\n")
                 setVar(out, op.push, "rcx")
             else:
-                out.write(f"    cmp rax, {rbx}\n")
+                out.write(f"    cmp rax, rbx\n")
                 out.write(f"    jl L{end}\n")
         elif oper == '>':
             if end == -1:
                 out.write("    mov rcx, 0\n")
                 out.write("    mov rdx, 1\n")
-                out.write(f"    cmp rax, {rbx}\n")
+                out.write(f"    cmp rax, rbx\n")
                 out.write("    cmovg rcx, rdx\n")
                 setVar(out, op.push, "rcx")
             else:
-                out.write(f"    cmp rax, {rbx}\n")
+                out.write(f"    cmp rax, rbx\n")
                 out.write(f"    jg L{end}\n")
         elif oper == '<=':
             if end == -1:
                 out.write("    mov rcx, 0\n")
                 out.write("    mov rdx, 1\n")
-                out.write(f"    cmp rax, {rbx}\n")
+                out.write(f"    cmp rax, rbx\n")
                 out.write("    cmovle rcx, rdx\n")
                 setVar(out, op.push, "rcx")
             else:
-                out.write(f"    cmp rax, {rbx}\n")
+                out.write(f"    cmp rax, rbx\n")
                 out.write(f"    jle L{end}\n")
         elif oper == '>=':
             if end == -1:
                 out.write("    mov rcx, 0\n")
                 out.write("    mov rdx, 1\n")
-                out.write(f"    cmp rax, {rbx}\n")
+                out.write(f"    cmp rax, rbx\n")
                 out.write("    cmovg rcx, rdx\n")
                 setVar(out, op.push, "rcx")
             else:
-                out.write(f"    cmp rax, {rbx}\n")
+                out.write(f"    cmp rax, rbx\n")
                 out.write(f"    jge L{end}\n")
         return
     if op.kind == "Identifier":
@@ -102,7 +117,7 @@ def writeProgram(out, op, nextOp):
         out.write(f"    mov rax, [{op.value}]\n")
         out.write(f"    push rax\n")
     elif op.kind == "Let":
-        VARIABLES[op.name] = op.value
+            VARIABLES[op.name] = calculator.calculate(op.value)
     elif op.kind == "Function":
         if op.funcType == "print":
             evalPrintExpr(out, op)
@@ -134,11 +149,6 @@ def writeProgram(out, op, nextOp):
 
 def evalPrintExpr(out, func):
     writeProgram(out, func.right, None)
-
-def evalBinExpr(out, binOp):
-    writeProgram(out, binOp.left, None)
-    writeProgram(out, binOp.right, None)
-    writeProgram(out, binOp.operator, None)
 
 def cross_refrence(tokens):
     stack = []

@@ -34,21 +34,22 @@ dump:
     ret
 global _start
 _start:
-    jmp L1
-L1:
-    mov rax, [a]
-    cmp rax, 0
-    jge L2
-    jmp L3
-L2:
-    mov rax, [a]
-    sub rax, 1
-    mov [a], rax
-    jmp L1
-L3:
+    mov rax, 7
+    mov rbx, 7
+    add rax, rbx
+    push rax
+    pop rax
+    mov rax, 7
+    mov rbx, 7
+    add rax, rbx
+    push rax
+    pop rbx
+    mul rbx
+    push rax
+    pop rdi
+    call dump
     mov       rax, 60
-    mov       rdi, 1
+    xor       rdi, rdi
     syscall
 
 section .data
-    a: dq 100000000
