@@ -24,10 +24,13 @@ def compileProgram(program: astIce.Program):
         out.write("    xor       rdi, rdi\n")                
         out.write("    syscall\n\n")
         out.write("section .data\n")
-        out.write("str: db \"hi\", 10\n")
-        out.write("strlen: db 3\n")
+        out.write(f"    defaultStr: db \"HIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII\"\n")
+        out.write(f"    defaultStrLen: db 136")
         for name, value in VARIABLES.items():
-            out.write(f"    {name}: dq {value}\n")
+            if str(value).isnumeric():
+                out.write(f"    {name}: dq {value}\n")
+            else:
+                out.write(f"    {name}: db `{value}`\n")
 
 def writeValue(out, side, opSide, nextOp):
     reg = "rax" if side == "left" else "rbx"
@@ -125,16 +128,30 @@ def writeProgram(out, op, nextOp):
         out.write(f"    mov [strlen], rbx\n")
 
     elif op.kind == "Let":
+        if op.value.kind != "string":
+            print(op.value.kind)
             VARIABLES[op.name] = calculator.calculate(op.value)
+        else:
+            VARIABLES[op.name] = op.value.value
+            VARIABLES[op.name+"len"] = len(op.value.value)
     elif op.kind == "Function":
         if op.funcType == "print":
-            if op.right.kind != "string":
+            if op.right.kind == "string":
+                out.write(f"    mov rax, `{op.right.value}`\n")
+                out.write(f"    mov rbx, {len(op.right.value)}\n")
+                out.write(f"    mov [defaultStr], rax\n")
+                out.write(f"    mov [defaultStrLen], rbx\n")
+                out.write(f"    mov rsi, defaultStr\n")
+                out.write(f"    mov rdx, [defaultStrLen]\n")
+                out.write("    call printStr\n")
+            elif op.right.kind == "Var":
+                out.write(f"    mov rsi, {op.right.value}\n")
+                out.write(f"    mov rdx, [{op.right.value}len]\n")
+                out.write("    call printStr\n")
+            else:
                 value = calculator.calculate(op.right)
                 out.write(f"    mov rdi, {value}\n")
                 out.write("    call dump\n")
-            else:
-                evalPrintExpr(out, op)
-                out.write("    call printStr\n")
         elif op.funcType == "if":
             evalPrintExpr(out, op)
             out.write("    pop rax\n")
@@ -235,8 +252,6 @@ def start(out):
     out.write("printStr:\n")
     out.write("    mov       rax, 1                  ; system call for write\n")
     out.write("    mov       rdi, 1                  ; file handle 1 is stdout\n")
-    out.write("    mov       rsi, str                ; address of string to output\n")
-    out.write("    mov       rdx, [strlen]             ; number of bytes\n")
     out.write("    syscall\n")
     out.write("    ret   \n\n\n\n\n\n")
     out.write("global _start\n")

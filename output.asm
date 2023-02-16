@@ -37,26 +37,26 @@ dump:
 printStr:
     mov       rax, 1                  ; system call for write
     mov       rdi, 1                  ; file handle 1 is stdout
-    mov       rsi, str                ; address of string to output
-    mov       rdx, [strlen]           ; number of bytes
     syscall
-
     ret   
+
+
+
 
 
 global _start
 _start:
-    ;print msg
-    mov rax, `tests\n`
-    mov rbx, 8
-    mov [str], rax
-    mov [strlen], rbx
+    mov rax, `test\n`
+    mov rbx, 6
+    mov [defaultStr], rax
+    mov [defaultStrLen], rbx
+    mov rsi, defaultStr
+    mov rdx, [defaultStrLen]
     call printStr
-
     mov       rax, 60
     xor       rdi, rdi
     syscall
 
 section .data
-str: db "maxLen=100, aaaaaaaamaxLen=100, aaaaaaaamaxLen=100, aaaaaaaamaxLen=100, aaaaaaaamaxLen=100, aaaaaaaa", 10
-strlen: db 100
+    defaultStr: db "HIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
+    defaultStrLen: db 136
