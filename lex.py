@@ -2,6 +2,7 @@ from enum import IntEnum
 from enum import auto
 
 class operators(IntEnum): 
+    STRING = auto()
     INT = auto()
     BINOP = auto()
     OPENPAREN = auto()
@@ -41,7 +42,7 @@ def getAlpha(line: str, index: int):
     
 def lex_file():
     with open("code.ice", 'r') as inputData:
-        assert operators.totalOps == 11, "need to add new ops for lex, totalOps = %d" % int(operators.totalOps)
+        assert operators.totalOps == 12, "need to add new ops for lex, totalOps = %d" % int(operators.totalOps)
         tokens = []
         index = 0
         for line in inputData:
@@ -69,6 +70,13 @@ def lex_file():
                     else:
                         tokens.append(Token(operators.LETNAME, value=alpha))
                     continue
+                elif line[index] == '"':
+                    index += 1
+                    string = ""
+                    while line[index] != '"':
+                        string += line[index]
+                        index += 1
+                    tokens.append(Token(operators.STRING, value=string))
                 elif line[index] == '+':
                     tokens.append(Token(operators.BINOP, '+'))
                 elif line[index] == '-':

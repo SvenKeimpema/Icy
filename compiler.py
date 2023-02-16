@@ -24,6 +24,8 @@ def compileProgram(program: astIce.Program):
         out.write("    xor       rdi, rdi\n")                
         out.write("    syscall\n\n")
         out.write("section .data\n")
+        out.write("str: db \"hi\", 10\n")
+        out.write("strlen: db 3\n")
         for name, value in VARIABLES.items():
             out.write(f"    {name}: dq {value}\n")
 
@@ -116,13 +118,23 @@ def writeProgram(out, op, nextOp):
     elif op.kind == "Var" and (nextOp.kind != "BinaryExpr" if nextOp != None else True):
         out.write(f"    mov rax, [{op.value}]\n")
         out.write(f"    push rax\n")
+    elif op.kind == "string":
+        out.write(f"    mov rax, \"{op.value}\"\n")
+        out.write(f"    mov rbx, {len(op.value)}\n")
+        out.write(f"    mov [str], rax\n")
+        out.write(f"    mov [strlen], rbx\n")
+
     elif op.kind == "Let":
             VARIABLES[op.name] = calculator.calculate(op.value)
     elif op.kind == "Function":
         if op.funcType == "print":
-            evalPrintExpr(out, op)
-            out.write("    pop rdi\n")
-            out.write("    call dump\n")
+            if op.right.kind != "string":
+                value = calculator.calculate(op.right)
+                out.write(f"    mov rdi, {value}\n")
+                out.write("    call dump\n")
+            else:
+                evalPrintExpr(out, op)
+                out.write("    call printStr\n")
         elif op.funcType == "if":
             evalPrintExpr(out, op)
             out.write("    pop rax\n")
@@ -191,7 +203,7 @@ def start(out):
     out.write("    mov     r9, -3689348814741910323\n")
     out.write("    sub     rsp, 40\n")
     out.write("    mov     BYTE [rsp+31], 10\n")
-    out.write("    lea     rcx, [rsp+30]\n")
+    out.write("    lea     rcx, [rsp+30]\n\n")
     out.write(".L2:\n")
     out.write("    mov     rax, rdi\n")
     out.write("    lea     r8, [rsp+32]\n")
@@ -219,6 +231,13 @@ def start(out):
     out.write("    mov     rax, 1\n")
     out.write("    syscall\n")
     out.write("    add     rsp, 40\n")
-    out.write("    ret\n")
+    out.write("    ret\n\n")
+    out.write("printStr:\n")
+    out.write("    mov       rax, 1                  ; system call for write\n")
+    out.write("    mov       rdi, 1                  ; file handle 1 is stdout\n")
+    out.write("    mov       rsi, str                ; address of string to output\n")
+    out.write("    mov       rdx, [strlen]             ; number of bytes\n")
+    out.write("    syscall\n")
+    out.write("    ret   \n\n\n\n\n\n")
     out.write("global _start\n")
     out.write("_start:\n")

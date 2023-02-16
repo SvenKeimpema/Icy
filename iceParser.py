@@ -15,12 +15,12 @@ class Parser:
 
     def produceAST(self) -> astIce.Program:
         self.tokens = lex.lex_file()
-        program = astIce.Program()
+        self.program = astIce.Program()
 
         while self.notEOF():
-            program.body.append(self.parse_stmt())
+            self.program.body.append(self.parse_stmt())
 
-        return program
+        return self.program
 
     def parse_stmt(self) -> astIce.Stmt:
         return self.parse_func()
@@ -83,6 +83,10 @@ class Parser:
                 identifier = astIce.NumericLiteral()
                 identifier.value = self.eat().value
                 return identifier
+            case lex.operators.STRING:
+                string = astIce.String()
+                string.value = self.eat().value
+                return string
             case lex.operators.OPENPAREN:
                 self.eat()
                 value = self.parse_expr()

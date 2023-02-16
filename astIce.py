@@ -59,6 +59,11 @@ class Var(Expr):
         self.kind: NodeType = "Var"
         self.value: int = -1  
 
+class String(Expr):
+    def __init__(self):
+        self.kind: NodeType = "string"
+        self.value: str = ""
+
 class NumericLiteral(Expr):
     def __init__(self):
         self.kind: NodeType = "NumericLiteral"

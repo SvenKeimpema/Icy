@@ -4,6 +4,7 @@ dump:
     sub     rsp, 40
     mov     BYTE [rsp+31], 10
     lea     rcx, [rsp+30]
+
 .L2:
     mov     rax, rdi
     lea     r8, [rsp+32]
@@ -32,24 +33,30 @@ dump:
     syscall
     add     rsp, 40
     ret
+
+printStr:
+    mov       rax, 1                  ; system call for write
+    mov       rdi, 1                  ; file handle 1 is stdout
+    mov       rsi, str                ; address of string to output
+    mov       rdx, [strlen]           ; number of bytes
+    syscall
+
+    ret   
+
+
 global _start
 _start:
-    mov rax, 7
-    mov rbx, 7
-    add rax, rbx
-    push rax
-    pop rax
-    mov rax, 7
-    mov rbx, 7
-    add rax, rbx
-    push rax
-    pop rbx
-    mul rbx
-    push rax
-    pop rdi
-    call dump
+    ;print msg
+    mov rax, `tests\n`
+    mov rbx, 8
+    mov [str], rax
+    mov [strlen], rbx
+    call printStr
+
     mov       rax, 60
     xor       rdi, rdi
     syscall
 
 section .data
+str: db "maxLen=100, aaaaaaaamaxLen=100, aaaaaaaamaxLen=100, aaaaaaaamaxLen=100, aaaaaaaamaxLen=100, aaaaaaaa", 10
+strlen: db 100
