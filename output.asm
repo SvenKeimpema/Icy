@@ -46,47 +46,18 @@ printStr:
 
 global _start
 _start:
-    mov rax, [a]
-    mov rbx, [b]
-    mov rcx, 0
-    mov rdx, 1
-    cmp rax, rbx
-    cmovl rcx, rdx
-    push rcx
-    pop rax
-    test rax, rax
-    jz L4
-    mov rsi, name0
-    mov rdx, [name0len]
-    call printStr
-    jmp L4
-L4:
-    mov rax, [a]
-    mov rbx, [b]
-    add rax, rbx
-    mov [b], rax
-    jmp L6
-L6:
     mov rax, [b]
     mov rbx, [a]
     cmp rax, rbx
-    jg L7
-    jmp L9
-L7:
-    mov rdi, [b]
+    jl L4
+    mov rdi, 2
     call dump
-    mov rax, [b]
-    mov rbx, 1
-    sub rax, rbx
-    mov [b], rax
-    jmp L6
-L9:
+    jmp L4
+L4:
     mov       rax, 60
     xor       rdi, rdi
     syscall
 
 section .data
-    a: dq 5
-    b: dq 6
-    name0: db `a is less than b\n`
-    name0len: dq 18
+    a: dq 3
+    b: dq 2

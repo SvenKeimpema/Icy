@@ -1,14 +1,6 @@
-let a = 5
-let b = 1+5
+let a = 3
+let b = 2
 
-if(a < b)
-    print("a is less than b\n")
-end
-
-b = a + b
-
-while b > a
-    print(b)
-
-    b = b - 1
+if(b < a) 
+    print(2)
 end

@@ -3,6 +3,7 @@ import calculator
 
 INDEX = -1
 VARIABLES = {}
+REVIFDICT = {'>': '<', '<': '>', "<=": '>=', '>=': '<='}
 STRINGVARS = 0
 
 def setVar(out, push: bool, reg: str):
@@ -157,10 +158,8 @@ def writeProgram(out, op, nextOp):
                 out.write(f"    mov rdi, {value}\n")
                 out.write("    call dump\n")
         elif op.funcType == "if":
+            # op.right.operator = REVIFDICT[op.right.operator]
             evalPrintExpr(out, op)
-            out.write("    pop rax\n")
-            out.write("    test rax, rax\n")
-            out.write("    jz L%d\n" % op.end)
         elif op.funcType == "else":
             out.write("    jmp L%d\n" % op.end)
             out.write("L%d:\n" % INDEX)
@@ -207,6 +206,7 @@ def cross_refrence(tokens):
                 tokens[block_ip].right.end = block_ip+1
                 tokens[ip].end = block_ip
             else:
+                tokens[block_ip].right.end = ip
                 tokens[ip].end = ip
             tokens[block_ip].end = ip
     return tokens
