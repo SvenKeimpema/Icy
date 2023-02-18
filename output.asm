@@ -46,18 +46,19 @@ printStr:
 
 global _start
 _start:
-    mov rax, [b]
-    mov rbx, [a]
+    mov rax, [a]
+    mov rbx, [b]
+    mov rcx, 0
+    mov rdx, 1
     cmp rax, rbx
-    jl L4
-    mov rdi, 2
+    cmove rcx, rdx
+    push rcx
+    pop rdi
     call dump
-    jmp L4
-L4:
     mov       rax, 60
     xor       rdi, rdi
     syscall
 
 section .data
-    a: dq 3
-    b: dq 2
+    a: dq 5
+    b: dq 5

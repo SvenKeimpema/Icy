@@ -44,7 +44,7 @@ class Parser:
     def parse_conditional_expr(self):
         left = self.parse_additive_expr()
 
-        while self.at().value in ['>', '>=', '<=', '<']:
+        while self.at().value in ['>', '>=', '<=', '<', '=', '==']:
             op = self.eat().value
             right = self.parse_additive_expr()
             left = astIce.BinaryExpr().setBinExpr(left, right, op)
@@ -96,9 +96,18 @@ class Parser:
                 let = astIce.Let()
                 self.eat()
                 let.name = self.eat().value
-                self.eat()
-                let.value = self.parse_expr()
-                return let
+                evalLet = self.eat()
+                if evalLet.value == '=':
+                    self.eat
+                    let.value = self.parse_expr()
+                    return let
+                elif evalLet.value == '[':
+                    let.value = None
+                    let.arrvalue = self.eat()
+                    self.eat()
+                    return let
+                else:
+                    assert False, "Unimplented token for let, tokType=" + str(evalLet.value)
             case lex.operators.LETNAME:
                 var = astIce.Var()
                 var.value = self.eat().value

@@ -3,7 +3,9 @@ import astIce
 stack = []
 
 def calculate(op: astIce.Expr):
+    print(op.kind)
     if op.kind == "BinaryExpr":
+        print("test")
         calculate(op.left)
         calculate(op.right)
 
@@ -18,6 +20,16 @@ def calculate(op: astIce.Expr):
             stack.append(var2*var1)
         elif op.operator == '/':
             stack.append(var2/var1)
+        elif op.operator == '=':
+            stack.append(var1==var2)
+        elif op.operator == '>':
+            stack.append(var1>var2)
+        elif op.operator == '<':
+            stack.append(var1<var2)
+        elif op.operator == '>=':
+            stack.append(var1>=var2)
+        elif op.operator == '<=':
+            stack.append(var1<=var2)
 
     elif op.kind == "NumericLiteral":
         stack.append(op.value)

@@ -3,6 +3,7 @@ import calculator
 
 INDEX = -1
 VARIABLES = {}
+ARRVARIABLES = {}
 REVIFDICT = {'>': '<', '<': '>', "<=": '>=', '>=': '<='}
 STRINGVARS = 0
 
@@ -31,6 +32,9 @@ def compileProgram(program: astIce.Program):
                 out.write(f"    {var[0]}: dq {var[1]}\n")
             else:
                 out.write(f"    {var[0]}: db `{var[1]}`\n")
+        
+        for var in ARRVARIABLES.items():
+            out.write(f"    {var[0]}: TIMES {var[1].value} dq 0")
 
 def writeValue(out, side, opSide, nextOp):
     reg = "rax" if side == "left" else "rbx"
@@ -80,6 +84,16 @@ def writeProgram(out, op, nextOp):
             else:
                 out.write(f"    cmp rax, rbx\n")
                 out.write(f"    jl L{end}\n")
+        elif oper == '==':
+            if end == -1:
+                out.write("    mov rcx, 0\n")
+                out.write("    mov rdx, 1\n")
+                out.write(f"    cmp rax, rbx\n")
+                out.write("    cmove rcx, rdx\n")
+                setVar(out, op.push, "rcx")
+            else:
+                out.write(f"    cmp rax, rbx\n")
+                out.write(f"    jne L{end}\n")
         elif oper == '>':
             if end == -1:
                 out.write("    mov rcx, 0\n")
@@ -128,7 +142,9 @@ def writeProgram(out, op, nextOp):
         out.write(f"    mov [strlen], rbx\n")
 
     elif op.kind == "Let":
-        if op.value.kind != "string":
+        if op.value == None:
+            ARRVARIABLES[op.name] = op.arrvalue
+        elif op.value.kind != "string":
             if op.value.kind == "BinaryExpr":
                 VARIABLES[op.name] = calculator.calculate(op.value)
             else:
@@ -154,8 +170,8 @@ def writeProgram(out, op, nextOp):
                     out.write(f"    mov rdx, [{op.right.value}len]\n")
                     out.write("    call printStr\n")
             else:
-                value = calculator.calculate(op.right)
-                out.write(f"    mov rdi, {value}\n")
+                evalPrintExpr(out, op)
+                out.write(f"    pop rdi\n")
                 out.write("    call dump\n")
         elif op.funcType == "if":
             # op.right.operator = REVIFDICT[op.right.operator]
@@ -186,7 +202,7 @@ def cross_refrence(tokens):
     stack = []
     for ip in range(len(tokens)):
         op = tokens[ip]
-        if op.kind != "Function":
+        if op == None or op.kind != "Function":
             continue
         if op.funcType in ["if", "while"]:
             stack.append(ip)

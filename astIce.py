@@ -53,6 +53,7 @@ class Let(Expr):
         self.kind: NodeType = "Let"
         self.name: str = ""
         self.value: Expr = None
+        self.arrValue: Expr = None
 
 class Var(Expr):
     def __init__(self):

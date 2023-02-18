@@ -1,6 +1,4 @@
-let a = 3
-let b = 2
+let a = 5
+let b = 5
 
-if(b < a) 
-    print(2)
-end
+print(a == b)

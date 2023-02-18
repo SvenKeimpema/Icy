@@ -7,6 +7,8 @@ class operators(IntEnum):
     BINOP = auto()
     OPENPAREN = auto()
     CLOSEPAREN = auto()
+    OPENARRPAREN = auto()
+    CLOSEARRPAREN = auto()
     DUMP = auto()
     IDENTIFIER = auto()
     FUNCTION = auto()
@@ -42,7 +44,7 @@ def getAlpha(line: str, index: int):
     
 def lex_file(filePath):
     with open(filePath, 'r') as inputData:
-        assert operators.totalOps == 12, "need to add new ops for lex, totalOps = %d" % int(operators.totalOps)
+        assert operators.totalOps == 14, "need to add new ops for lex, totalOps = %d" % int(operators.totalOps)
         tokens = []
         index = 0
         for line in inputData:
@@ -101,8 +103,20 @@ def lex_file(filePath):
                     tokens.append(Token(operators.OPENPAREN))
                 elif line[index] == ')':
                     tokens.append(Token(operators.CLOSEPAREN))
+                elif line[index] == '[':
+                    tokens.append(Token(operators.OPENARRPAREN, '['))
+                elif line[index] == ']':
+                    tokens.append(Token(operators.CLOSEARRPAREN, ']'))
+                elif line[index] == '(':
+                    tokens.append(Token(operators.OPENPAREN))
+                elif line[index] == ')':
+                    tokens.append(Token(operators.CLOSEPAREN))
                 elif line[index] == '=':
-                    tokens.append(Token(operators.IDENTIFIER))
+                    if line[index+1] == '=':
+                        tokens.append(Token(operators.BINOP, '=='))
+                        index += 1
+                    else:
+                        tokens.append(Token(operators.IDENTIFIER, '='))
                 elif line[index] == '#':
                     break
                 index += 1
