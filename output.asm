@@ -46,19 +46,26 @@ printStr:
 
 global _start
 _start:
-    mov rax, [a]
-    mov rbx, [b]
-    mov rcx, 0
-    mov rdx, 1
-    cmp rax, rbx
-    cmove rcx, rdx
-    push rcx
-    pop rdi
+    push 4
+    pop rax
+    mov [a+0], rax
+    push 5
+    pop rax
+    mov [a+8], rax
+    mov rax, [a+0]
+    mov rbx, [a+8]
+    add rax, rbx
+    push rax
+    pop rax
+    mov [a+16], rax
+    push 7
+    pop rax
+    mov [a+24], rax
+    mov rdi, [a+16]
     call dump
     mov       rax, 60
     xor       rdi, rdi
     syscall
 
 section .data
-    a: dq 5
-    b: dq 5
+    a: TIMES 64 dq 0

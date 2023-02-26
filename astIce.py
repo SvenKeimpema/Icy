@@ -40,6 +40,7 @@ class Identifier(Expr):
         self.kind: NodeType = "Identifier"
         self.name: str = ""
         self.value: Expr = None
+        self.arrIndex: int = -1
 
 class Function(Expr):
     def __init__(self):
@@ -58,7 +59,13 @@ class Let(Expr):
 class Var(Expr):
     def __init__(self):
         self.kind: NodeType = "Var"
-        self.value: int = -1  
+        self.value: int = -1
+
+class ArrVar(Expr):
+    def __init__(self):
+        self.kind: NodeType = "ArrVar"
+        self.name: str = ""
+        self.arrIndex: int = -1    
 
 class String(Expr):
     def __init__(self):

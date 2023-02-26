@@ -44,6 +44,8 @@ def writeValue(out, side, opSide, nextOp):
         out.write(f"    pop {reg}\n")
     elif opSide.kind == "NumericLiteral":
         out.write(f"    mov {reg}, {opSide.value}\n")
+    elif opSide.kind == "ArrVar":
+        out.write(f"    mov {reg}, [{opSide.name}+{opSide.arrIndex.value*8}]\n")
     else:
         out.write(f"    mov {reg}, [{opSide.value}]\n")
 
@@ -125,15 +127,22 @@ def writeProgram(out, op, nextOp):
                 out.write(f"    cmp rax, rbx\n")
                 out.write(f"    jge L{end}\n")
         return
-    if op.kind == "Identifier":
+    if op.kind == "Identifier" and op.arrIndex == -1:
         if op.value.kind == "BinaryExpr":
             op.value.push = False
         writeProgram(out, op.value, nextOp)
         out.write(f"    mov [{op.name}], rax\n")
+    elif op.kind == "Identifier" and not op.arrIndex == -1:
+        writeProgram(out, op.value, nextOp)
+        out.write("    pop rax\n")
+        out.write(f"    mov [{op.name}+{op.arrIndex.value*8}], rax\n")
     elif op.kind == "NumericLiteral" and (nextOp.kind != "BinaryExpr" if nextOp != None else True):
         out.write("    push %d\n" % op.value)
     elif op.kind == "Var" and (nextOp.kind != "BinaryExpr" if nextOp != None else True):
         out.write(f"    mov rax, [{op.value}]\n")
+        out.write(f"    push rax\n")
+    elif op.kind == "ArrVar" and (nextOp.kind != "BinaryExpr" if nextOp != None else True):
+        out.write(f"    mov rax, [{op.name}+{op.arrIndex.value*8}]\n")
         out.write(f"    push rax\n")
     elif op.kind == "string":
         out.write(f"    mov rax, \"{op.value}\"\n")
@@ -154,7 +163,7 @@ def writeProgram(out, op, nextOp):
             VARIABLES[op.name+"len"] = len(op.value.value)
     elif op.kind == "Function":
         if op.funcType == "print":
-            if op.right.kind == "string":
+            if op.right.kind == "string" and not type(op.right.value) == int:
                 VARIABLES["name"+str(STRINGVARS)] = op.right.value
                 VARIABLES["name"+str(STRINGVARS)+"len"] = len(op.right.value)
                 out.write(f"    mov rsi, name{str(STRINGVARS)}\n")
@@ -162,13 +171,16 @@ def writeProgram(out, op, nextOp):
                 STRINGVARS += 1
                 out.write("    call printStr\n")
             elif op.right.kind == "Var":
-                if type(VARIABLES[op.right.value]) == int:
+                if type(VARIABLES[op.right.value].value) == int:
                     out.write(f"    mov rdi, [{op.right.value}]\n")
                     out.write("    call dump\n")
-                else:
+                else: 
                     out.write(f"    mov rsi, {op.right.value}\n")
                     out.write(f"    mov rdx, [{op.right.value}len]\n")
                     out.write("    call printStr\n")
+            elif op.right.kind == "ArrVar":
+                out.write(f"    mov rdi, [{op.right.name}+{op.right.arrIndex.value*8}]\n")
+                out.write("    call dump\n")
             else:
                 evalPrintExpr(out, op)
                 out.write(f"    pop rdi\n")

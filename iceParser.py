@@ -117,6 +117,20 @@ class Parser:
                     identifier.name = var.value
                     identifier.value = self.parse_expr()
                     return identifier
+                elif len(self.tokens) > 0 and self.at().type == lex.operators.OPENARRPAREN:
+                    self.eat()
+                    arrVar = astIce.ArrVar()
+                    arrVar.name = var.value
+                    arrVar.arrIndex = self.eat()
+                    self.eat()
+                    if len(self.tokens) > 0 and self.at().type == lex.operators.IDENTIFIER:
+                        self.eat()
+                        identifier = astIce.Identifier()
+                        identifier.name = var.value
+                        identifier.value = self.parse_expr()
+                        identifier.arrIndex = arrVar.arrIndex
+                        return identifier
+                    return arrVar
                 return var
             case _:
                 assert False, "token unimplemented: " + str(tk)
